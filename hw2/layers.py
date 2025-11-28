@@ -1,4 +1,6 @@
 import abc
+
+import numpy as np
 import torch
 
 
@@ -82,7 +84,7 @@ class LeakyReLU(Layer):
 
         # TODO: Implement the LeakyReLU operation.
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        out = torch.max(x, self.alpha*x)
         # ========================
 
         self.grad_cache["x"] = x
@@ -97,7 +99,8 @@ class LeakyReLU(Layer):
 
         # TODO: Implement gradient w.r.t. the input x
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        leaky_relu_derivative = torch.where(x >= 0, torch.ones_like(x), torch.full_like(x, self.alpha))
+        dx = leaky_relu_derivative * dout
         # ========================
 
         return dx
@@ -116,7 +119,7 @@ class ReLU(LeakyReLU):
 
     def __init__(self):
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        super().__init__(alpha=0)
         # ========================
 
     def __repr__(self):
@@ -142,7 +145,8 @@ class Sigmoid(Layer):
         # TODO: Implement the Sigmoid function.
         #  Save whatever you need into grad_cache.
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        out = 1/(1+torch.exp(-1 * x))
+        self.grad_cache["out"] = out
         # ========================
 
         return out
@@ -155,7 +159,8 @@ class Sigmoid(Layer):
 
         # TODO: Implement gradient w.r.t. the input x
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        out = self.grad_cache["out"]
+        dx = dout * out * (1 - out)
         # ========================
 
         return dx
@@ -183,7 +188,8 @@ class TanH(Layer):
         # TODO: Implement the tanh function.
         #  Save whatever you need into grad_cache.
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        out = (torch.exp(x) - torch.exp(-1 * x)) / (torch.exp(x) + torch.exp(-1 * x))
+        self.grad_cache["out"] = out
         # ========================
 
         return out
@@ -196,7 +202,8 @@ class TanH(Layer):
 
         # TODO: Implement gradient w.r.t. the input x
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        out = self.grad_cache["out"]
+        dx = (1 - torch.pow(out, 2)) * dout
         # ========================
 
         return dx
