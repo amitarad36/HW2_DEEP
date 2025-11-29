@@ -11,6 +11,11 @@ math (delimited with $$).
 part1_q1 = r"""
 **Your answer:**
 
+A. The jacobian has an entry for each element of Y with respect to each element of X. Meaning, we have a 4 dimensional tensor with entries: (64,512,64,1024) (Y batch size, Y out features, X batch, X in features)
+
+B. Those matrices has the shape (din x dout) and we have (N * N) matrices like that. If we look at the (m,n) matrix, we ask "what is the gradiant in the n'th sample according to the m'th sample". Of course the answer is the zero matrix because the n'th output sample is affected only by the n'th input sample. Now, if n=m we will see W (the weight matrix).
+
+C. 
 
 Write your answer using **markdown** and $\LaTeX$:
 ```python

@@ -230,8 +230,10 @@ class Linear(Layer):
         # TODO: Create the weight matrix (self.w) and bias vector (self.b).
         # Initialize the weights to zero-mean gaussian noise with a standard
         # deviation of `wstd`. Init bias to zero.
+
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        self.w = torch.randn(size=(self.out_features, self.in_features)) * wstd
+        self.b = torch.zeros(self.out_features)
         # ========================
 
         # These will store the gradients
@@ -251,7 +253,7 @@ class Linear(Layer):
 
         # TODO: Compute the affine transform
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        out = (x @ self.w.T) + self.b
         # ========================
 
         self.grad_cache["x"] = x
@@ -270,7 +272,12 @@ class Linear(Layer):
         #   - db, the gradient of the loss with respect to b
         #  Note: You should ACCUMULATE gradients in dw and db.
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        # db = torch.ones_like(self.b)
+        dx = dout @ self.w
+        dw = dout.T @ x
+        db = dout.sum(dim=0)
+        self.dw += dw
+        self.db += db
         # ========================
 
         return dx
@@ -311,7 +318,10 @@ class CrossEntropyLoss(Layer):
         # TODO: Compute the cross entropy loss using the last formula from the
         #  notebook (i.e. directly using the class scores).
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        log_sum_exp = torch.log(torch.sum(torch.exp(x), dim=1))
+        correct_label_score = x[torch.arange(N), y]
+
+        loss = torch.mean(log_sum_exp - correct_label_score)
         # ========================
 
         self.grad_cache["x"] = x
@@ -330,7 +340,12 @@ class CrossEntropyLoss(Layer):
 
         # TODO: Calculate the gradient w.r.t. the input x.
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        ex = torch.exp(x)
+        soft_max = ex / torch.sum(ex,dim=1, keepdim=True)
+        dx = soft_max
+        dx[torch.arange(N), y] -= 1
+        dx /= N
+        dx *= dout
         # ========================
 
         return dx
@@ -389,9 +404,10 @@ class Sequential(Layer):
         # TODO: Implement the forward pass by passing each layer's output
         #  as the input of the next.
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        for l in self.layers:
+            x = l.forward(x, **kw)
         # ========================
-
+        out = x
         return out
 
     def backward(self, dout):
@@ -401,7 +417,9 @@ class Sequential(Layer):
         #  Each layer's input gradient should be the previous layer's output
         #  gradient. Behold the backpropagation algorithm in action!
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        for l in reversed(self.layers):
+            dout = l.backward(dout)
+        din = dout
         # ========================
 
         return din
@@ -411,7 +429,8 @@ class Sequential(Layer):
 
         # TODO: Return the parameter tuples from all layers.
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        for l in self.layers:
+            params.extend(l.params())
         # ========================
 
         return params
@@ -469,7 +488,22 @@ class MLP(Layer):
 
         # TODO: Build the MLP architecture as described.
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        if activation == "relu":
+            act_function = ReLU
+        elif activation == "sigmoid":
+            act_function = Sigmoid
+        else:
+            raise ValueError(f"Unsupported activation: {activation}")
+
+        dims = [in_features] + list(hidden_features) + [num_classes]
+        for i in range(len(dims)-1):
+            din = dims[i]
+            dout = dims[i+1]
+            layers.append(Linear(in_features=din, out_features=dout))
+
+            if i < len(dims)-2:
+                layers.append(act_function())
+
         # ========================
 
         self.sequence = Sequential(*layers)
