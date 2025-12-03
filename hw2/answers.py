@@ -133,8 +133,8 @@ part1_q1 = r"""
 part1_q2 = r"""
 **Your answer:**
 
-Gradient descent only looks at the gradient, so it basically assumes the loss surface behaves the same in every direction. This works fine on simple landscapes, but it becomes inefficient when the function has very different curvature in different directions — for example, a long narrow valley where one direction is very steep and the other is almost flat.  
-In this situation GD keeps jumping from side to side across the steep direction and moves very slowly along the flat direction. So even though the minimum is straight ahead, the optimizer spends most of its time “zig-zagging” instead of actually making progress.
+Gradient descent only looks at the gradient, so it looks at the loss surface uniformly in every direction. It might become inefficient when the function has very different curvature in different directions — for example, a long narrow valley where one direction is very steep and the other is almost flat.  
+In this situation GD keeps jumping from side to side across the steep direction and moves very slowly along the flat direction. So the optimizer spends most of its time “zig-zagging” instead of actually making progress.
 
 This is exactly where the second-order derivative (the Hessian) becomes useful.  
 The Hessian tells us how curved the function is in each direction:
@@ -142,18 +142,17 @@ The Hessian tells us how curved the function is in each direction:
 - **High curvature** → the loss changes quickly (steep direction).  
 - **Low curvature** → the loss changes slowly (flat direction).
 
-Knowing this lets us adjust the step size differently for different directions: take tiny steps where the curvature is high, and much larger steps where the curvature is low. That’s information the gradient alone cannot give.
+Knowing this lets us adjust the step size differently for different directions: take tiny steps where the curvature is high, and much larger steps where the curvature is low.
 
-Newton's method is the classic example of using this idea. Instead of treating the function as linear (like GD does), it locally fits a quadratic bowl. The update rule
+Newton's method is an example of using this idea. The update rule
 
 $$
 \theta_{t+1} = \theta_t - H^{-1} \nabla J(\theta_t)
 $$
 
-basically says: "scale the gradient by the inverse curvature."  
-This transforms the narrow valley into something rounder and easier to optimize, allowing the algorithm to move straight toward the minimum instead of oscillating around it.
+basically says: "scale the gradient by the inverse curvature."  (separately for each direction)
+This helps the optimizer take more direct paths to the minimum, avoiding the zig-zagging problem.
 
-So the second-order derivative isn’t mandatory for gradient descent, but in scenarios where curvature matters, it can dramatically improve the optimization process.
 """
 
 
