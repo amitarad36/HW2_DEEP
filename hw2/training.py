@@ -83,7 +83,18 @@ class Trainer(abc.ABC):
             #  - Use the train/test_epoch methods.
             #  - Save losses and accuracies in the lists above.
             # ====== YOUR CODE: ======
-            raise NotImplementedError()
+            # Train for one epoch on training set
+            train_result = self.train_epoch(dl_train, verbose=verbose, **kw)
+            train_loss.append(sum(train_result.losses) / len(train_result.losses))
+            train_acc.append(train_result.accuracy)
+            
+            # Evaluate on test set
+            test_result = self.test_epoch(dl_test, verbose=verbose, **kw)
+            test_loss.append(sum(test_result.losses) / len(test_result.losses))
+            test_acc.append(test_result.accuracy)
+            
+            # Count this epoch
+            actual_num_epochs += 1
             # ========================
 
             # TODO:
@@ -94,11 +105,19 @@ class Trainer(abc.ABC):
             #    the checkpoints argument.
             if best_acc is None or test_result.accuracy > best_acc:
                 # ====== YOUR CODE: ======
-                raise NotImplementedError()
+                best_acc = test_result.accuracy
+                epochs_without_improvement = 0
+                
+                if checkpoints is not None:
+                    self.save_checkpoint(f"{checkpoints}.pt")
                 # ========================
             else:
                 # ====== YOUR CODE: ======
-                raise NotImplementedError()
+                epochs_without_improvement += 1
+                
+                if early_stopping is not None and epochs_without_improvement >= early_stopping:
+                    self._print(f"*** Early stopping after {epochs_without_improvement} epochs without improvement", verbose=True)
+                    break
                 # ========================
 
         return FitResult(actual_num_epochs, train_loss, train_acc, test_loss, test_acc)
@@ -277,7 +296,13 @@ class ClassifierTrainer(Trainer):
             #  - Forward pass
             #  - Calculate number of correct predictions
             # ====== YOUR CODE: ======
-            raise NotImplementedError()
+            y_pred = self.model(X)
+            
+            batch_loss = float(self.loss_fn(y_pred, y).item())
+            
+            predictions = torch.argmax(y_pred, dim=1)
+            num_correct = int(torch.sum(predictions == y).item())
+
             # ========================
 
         return BatchResult(batch_loss, num_correct)
@@ -286,7 +311,11 @@ class ClassifierTrainer(Trainer):
 class LayerTrainer(Trainer):
     def __init__(self, model, loss_fn, optimizer):
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        # Store the model, loss function, and optimizer
+        # Note: LayerTrainer doesn't use device (our custom layers run on CPU)
+        super().__init__(model, device=None)
+        self.loss_fn = loss_fn
+        self.optimizer = optimizer
         # ========================
 
     def train_batch(self, batch) -> BatchResult:
@@ -299,7 +328,15 @@ class LayerTrainer(Trainer):
         #  - Calculate number of correct predictions (make sure it's an int,
         #    not a tensor) as num_correct.
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        X = X.reshape(X.shape[0], -1)
+        scores = self.model.forward(X)
+        loss = self.loss_fn.forward(scores, y)
+        self.optimizer.zero_grad()
+        dout = self.loss_fn.backward()
+        self.model.backward(dout)
+        self.optimizer.step()
+        predictions = torch.argmax(scores, dim=1)
+        num_correct = int(torch.sum(predictions == y).item())
         # ========================
 
         return BatchResult(loss, num_correct)
@@ -309,7 +346,19 @@ class LayerTrainer(Trainer):
 
         # TODO: Evaluate the Layer model on one batch of data.
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        # Step 1: Flatten images (same as training)
+        X = X.reshape(X.shape[0], -1)
+        
+        # Step 2: Forward pass only (no backward pass during testing)
+        scores = self.model.forward(X)
+        loss = self.loss_fn.forward(scores, y)
+        
+        # Step 3: Calculate accuracy
+        predictions = torch.argmax(scores, dim=1)
+        num_correct = int(torch.sum(predictions == y).item())
+        
+        # Note: No gradient computation, no optimizer.step()
+        # Testing is just: forward pass → measure performance
         # ========================
 
         return BatchResult(loss, num_correct)
