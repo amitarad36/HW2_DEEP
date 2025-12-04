@@ -189,7 +189,7 @@ def part2_optim_hp():
     
     lr_vanilla = 0.02      
     lr_momentum = 0.005     
-    lr_rmsprop = 0.0001    
+    lr_rmsprop = 0.0005    
     
     reg = 0.001
     # ========================
@@ -210,7 +210,8 @@ def part2_dropout_hp():
     # TODO: Tweak the hyperparameters to get the model to overfit without
     # dropout.
     # ====== YOUR CODE: ======
-    raise NotImplementedError()
+    wstd = 0.1  
+    lr = 0.001 
     # ========================
     return dict(wstd=wstd, lr=lr)
 
@@ -218,27 +219,66 @@ def part2_dropout_hp():
 part2_q1 = r"""
 **Your answer:**
 
+## Part 1: No-Dropout vs Dropout
 
-Write your answer using **markdown** and $\LaTeX$:
-```python
-# A code block
-a = 2
-```
-An equation: $e^{i\pi} -1 = 0$
+Yes, the graphs match what we expected to see.
 
+**Explanation:**
+- **Without dropout (blue line)**: The model achieves ~95% training accuracy while test accuracy remains stuck at ~23%. This is classic **severe overfitting**. The model memorizes the training set perfectly but completely fails to generalize to unseen test data. The train loss decreases to ~0.3 while test loss increases over time, diverging dramatically.
+
+- **With dropout (orange and green lines)**: Adding dropout constrains the model from overfitting. With dropout=0.4, training accuracy is reduced to ~70%, but test accuracy improves significantly to ~29% - a 26% improvement over no dropout! This trade-off is exactly what we expect: dropout prevents co-adaptation of neurons and forces the network to learn more robust features.
+
+**Examples from graphs:**
+- Train loss (log scale): No dropout drops to ~0.3; dropout=0.4 stays around ~1.0
+- Test loss (log scale): No dropout increases to ~2.8; dropout=0.4 stays stable around ~2.1
+- Train-test gap: No dropout has 95%-23%=72% gap; dropout=0.4 has only 70%-29%=41% gap
+
+## Part 2: Low-Dropout vs High-Dropout Comparison
+
+**Dropout=0.4 (orange) vs Dropout=0.8 (green):**
+
+- **Dropout=0.4**: Best performance with ~70% train accuracy and ~29% test accuracy. Training curves are smooth and test loss is stable. This is the **sweet spot** for regularization.
+
+- **Dropout=0.8**: Underfitting occurs. Train accuracy only reaches ~30% because dropping 80% of neurons is too aggressive - the network loses too much capacity to learn. Test accuracy (~22-24%) is worse than dropout=0.4 because the model fundamentally can't learn the patterns in the data.
+
+**Key insight**: There's an optimal dropout rate. Too little (0) causes overfitting, too much (0.8) causes underfitting. Dropout=0.4 balances regularization and capacity, providing the best generalization in this setting.
 """
 
 part2_q2 = r"""
 **Your answer:**
 
+Yes, it is absolutely possible for test loss to **decrease** while test accuracy **decreases** simultaneously.
 
-Write your answer using **markdown** and $\LaTeX$:
-```python
-# A code block
-a = 2
-```
-An equation: $e^{i\pi} -1 = 0$
+## Why This Happens
 
+This can occur due to **changes in model confidence and probability distribution**, not necessarily better predictions.
+
+### Example Scenario:
+
+Consider a classification where:
+- **Epoch 1**: Model predicts class 0 with confidence 60% and class 1 with confidence 40% for a sample that is actually class 1
+  - Loss: $-\log(0.4) = 0.916$ (incorrect but somewhat confident)
+  - Accuracy: 0 (wrong prediction)
+
+- **Epoch 2**: Same model predicts class 0 with confidence 55% and class 1 with confidence 45% 
+  - Loss: $-\log(0.45) = 0.799$ (loss decreased!)
+  - Accuracy: 0 (still wrong prediction)
+
+### Root Cause:
+
+The cross-entropy loss measures the quality of probability estimates, **not just whether predictions are correct**. When the model:
+1. Reduces confidence in its (incorrect) top prediction
+2. Increases confidence in the correct class slightly
+3. But the predicted class remains the same
+
+Then loss can decrease while accuracy stays the same or even decreases if the model becomes less confident in correct predictions overall.
+
+This is particularly common when:
+- The model is overfitting and learning to be overconfident
+- Regularization or dropout starts to reduce overconfidence
+- The model redistributes its probability mass in ways that improve calibration but hurt accuracy
+
+In practice, when validation loss decreases but validation accuracy stagnates or decreases, it often indicates the model is improving its **confidence calibration** rather than its **classification ability**, which can be a sign of good regularization taking effect.
 """
 
 part2_q3 = r"""

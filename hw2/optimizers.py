@@ -133,7 +133,11 @@ class RMSProp(Optimizer):
 
         # TODO: Add your own initializations as needed.
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        # Initialize r dictionary: store moving average of squared gradients
+        # Key: id(p), Value: r tensor (same shape as p, initialized to 0)
+        self.r = {}
+        for p, _ in self.params:
+            self.r[id(p)] = torch.zeros_like(p)
         # ========================
 
     def step(self):
@@ -146,5 +150,10 @@ class RMSProp(Optimizer):
             # average of it's previous gradients. Use it to update the
             # parameters tensor.
             # ====== YOUR CODE: ======
-            raise NotImplementedError()
+            dp = dp + self.reg * p
+            
+            r = self.r[id(p)]
+            r.mul_(self.decay).add_((1 - self.decay) * dp.pow(2))
+
+            p.sub_(self.learn_rate * dp / (torch.sqrt(r) + self.eps))
             # ========================
