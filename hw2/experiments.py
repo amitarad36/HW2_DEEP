@@ -60,9 +60,10 @@ def mlp_experiment(
     loss_fn = torch.nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(
         model.parameters(),
-        lr=0.05,
-        weight_decay=0.005
-
+        lr=0.01,
+        weight_decay=0.001
+## lr =0.25
+## weight 0.007
     )
     trainer = ClassifierTrainer(model, loss_fn, optimizer)
     fit_result = trainer.fit(

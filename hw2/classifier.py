@@ -230,14 +230,18 @@ def select_roc_thresh(
     # ====== YOUR CODE: ======
     import numpy as np
     with torch.no_grad():
-        y_proba_pos = classifier.predict_proba(x)[:, 1]
+        pos_idx = getattr(classifier, "positive_class", 1)
+        y_proba_pos = classifier.predict_proba(x)[:, pos_idx]
     y_true = y.detach().cpu().numpy()
     y_score = y_proba_pos.detach().cpu().numpy()
-    fpr, tpr, thresh = roc_curve(y_true, y_score)
 
+    fpr, tpr, thresh = roc_curve(y_true, y_score)
     j_scores = tpr - fpr
+    j_scores[0] = -np.inf
+
     optimal_thresh_idx = int(np.argmax(j_scores))
     optimal_thresh = float(thresh[optimal_thresh_idx])
+    optimal_thresh = float(np.clip(optimal_thresh, 0.0, 1.0))
     # ========================
 
     if plot:
