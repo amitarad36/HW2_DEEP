@@ -179,7 +179,22 @@ def plot_decision_boundary_2d(
     #  plot a contour map.
     x1_grid, x2_grid, y_hat = None, None, None
     # ====== YOUR CODE: ======
-    raise NotImplementedError()
+    x1_min, x1_max = x[:, 0].min().item() - dx, x[:, 0].max().item() + dx
+    x2_min, x2_max = x[:, 1].min().item() - dx, x[:, 1].max().item() + dx
+
+    x1_vals = torch.arange(x1_min, x1_max, dx)
+    x2_vals = torch.arange(x2_min, x2_max, dx)
+
+    x1_grid, x2_grid = torch.meshgrid(x1_vals, x2_vals, indexing='xy')
+
+    grid_points = torch.stack(
+        [x1_grid.reshape(-1), x2_grid.reshape(-1)],
+        dim=1
+    )
+    with torch.no_grad():
+        y_hat_flat = classifier.classify(grid_points)
+    y_hat = y_hat_flat.reshape(x1_grid.shape).float()
+
     # ========================
 
     # Plot the decision boundary as a filled contour
@@ -213,7 +228,16 @@ def select_roc_thresh(
     fpr, tpr, thresh = None, None, None
     optimal_theresh_idx, optimal_thresh = None, None
     # ====== YOUR CODE: ======
-    raise NotImplementedError()
+    import numpy as np
+    with torch.no_grad():
+        y_proba_pos = classifier.predict_proba(x)[:, 1]
+    y_true = y.detach().cpu().numpy()
+    y_score = y_proba_pos.detach().cpu().numpy()
+    fpr, tpr, thresh = roc_curve(y_true, y_score)
+
+    j_scores = tpr - fpr
+    optimal_thresh_idx = int(np.argmax(j_scores))
+    optimal_thresh = float(thresh[optimal_thresh_idx])
     # ========================
 
     if plot:

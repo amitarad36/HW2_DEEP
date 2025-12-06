@@ -72,7 +72,7 @@ class Trainer(abc.ABC):
         best_acc = None
 
         for epoch in range(num_epochs):
-            verbose = False  # pass this to train/test_epoch.
+            verbose = bool(kw.pop('verbose', False))
             if print_every > 0 and (
                 epoch % print_every == 0 or epoch == num_epochs - 1
             ):
@@ -83,17 +83,14 @@ class Trainer(abc.ABC):
             #  - Use the train/test_epoch methods.
             #  - Save losses and accuracies in the lists above.
             # ====== YOUR CODE: ======
-            # Train for one epoch on training set
             train_result = self.train_epoch(dl_train, verbose=verbose, **kw)
             train_loss.append(sum(train_result.losses) / len(train_result.losses))
             train_acc.append(train_result.accuracy)
-            
-            # Evaluate on test set
+
             test_result = self.test_epoch(dl_test, verbose=verbose, **kw)
             test_loss.append(sum(test_result.losses) / len(test_result.losses))
             test_acc.append(test_result.accuracy)
-            
-            # Count this epoch
+
             actual_num_epochs += 1
             # ========================
 
@@ -276,7 +273,15 @@ class ClassifierTrainer(Trainer):
         #  - Update parameters
         #  - Classify and calculate number of correct predictions
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        self.optimizer.zero_grad()
+
+        out = self.model(X)
+        loss = self.loss_fn(out, y)
+        loss.backward()
+        self.optimizer.step()
+        preds = torch.argmax(out, dim=1)
+        num_correct = int((preds==y).sum().item())
+        batch_loss = float(loss.item())
         # ========================
 
         return BatchResult(batch_loss, num_correct)
