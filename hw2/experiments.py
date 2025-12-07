@@ -45,7 +45,55 @@ def mlp_experiment(
     #  Note: use print_every=0, verbose=False, plot=False where relevant to prevent
     #  output from this function.
     # ====== YOUR CODE: ======
-    raise NotImplementedError()
+
+    x0, y0 = next(iter(dl_train))
+    in_dim = x0.shape[1]
+    n_classes = 2
+
+    dims = [width] * depth + [n_classes]
+    nonlins = ["relu"] * depth + ["none"]
+
+    model = BinaryClassifier(
+        model=MLP(in_dim=in_dim, dims=dims, nonlins=nonlins),
+        threshold=0.5,
+    )
+    loss_fn = torch.nn.CrossEntropyLoss()
+    optimizer = torch.optim.Adam(
+        model.parameters(),
+        lr=0.01,
+        weight_decay=0.001
+## lr =0.25
+## weight 0.007
+    )
+    trainer = ClassifierTrainer(model, loss_fn, optimizer)
+    fit_result = trainer.fit(
+        dl_train,
+        dl_valid,
+        num_epochs=n_epochs,
+        print_every=0,
+        verbose=False,
+    )
+
+    valid_acc = fit_result.test_acc[-1]
+
+    def dl_to_xy(dl):
+        xs, ys = [], []
+        for xb, yb in dl:
+            xs.append(xb)
+            ys.append(yb)
+        return torch.cat(xs, dim=0), torch.cat(ys, dim=0)
+
+    model.eval()
+    x_valid, y_valid = dl_to_xy(dl_valid)
+    thresh = select_roc_thresh(model, x_valid, y_valid, plot=False)
+
+    model.threshold = thresh
+
+    x_test, y_test = dl_to_xy(dl_test)
+    with torch.no_grad():
+        y_pred_test = model.classify(x_test)
+    test_acc = float((y_pred_test == y_test).float().mean().item() * 100.0)
+
     # ========================
     return model, thresh, valid_acc, test_acc
 
