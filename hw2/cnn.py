@@ -211,20 +211,16 @@ class ResidualBlock(nn.Module):
         #  - Don't create layers which you don't use! This will prevent
         #    correct comparison in the test.
         # ====== YOUR CODE: ======
-        # --- 2. Define Main Path ---
         layers_main_path = []
         prev = in_channels
 
-        # Helper for activation
         def get_activation():
-            return nn.LeakyReLU() if activation_type == "lrelu" else nn.ReLU()
+            return nn.LeakyReLU(*activation_params) if activation_type == "lrelu" else nn.ReLU(*activation_params)
 
-        # Loop for all layers EXCEPT the last one
         for dim, kernel_size in zip(channels[:-1], kernel_sizes[:-1]):
             layers_main_path.append(
                 nn.Conv2d(prev, dim, kernel_size, padding=(kernel_size - 1) // 2)
             )
-            # Dropout is applied BETWEEN convolutions
             layers_main_path.append(nn.Dropout(dropout))
 
             if batchnorm:
@@ -233,11 +229,9 @@ class ResidualBlock(nn.Module):
             layers_main_path.append(get_activation())
             prev = dim
 
-        # The Final Convolution
         layers_main_path.append(
             nn.Conv2d(prev, channels[-1], kernel_sizes[-1], padding=(kernel_sizes[-1] - 1) // 2)
         )
-        # --- 1. Define Shortcut Path FIRST (Crucial for Random Seed Alignment) ---
         layers_shortcut_path = []
         if in_channels != channels[-1]:
             layers_shortcut_path.append(
@@ -357,17 +351,12 @@ class ResNet(CNN):
         pool_cls = POOLINGS[self.pooling_type]
         cur_in_channels = in_channels
 
-        # Iterate over channels in chunks of size 'pool_every'
         for i in range(0, len(self.channels), self.pool_every):
-            # Extract the current group of channels
             chunk = self.channels[i: i + self.pool_every]
             cur_out_channels = chunk[-1]
 
-            # Determine if we should use a bottleneck block
-            # Condition: bottleneck requested AND input channels match output channels for this block
             use_bottleneck = self.bottleneck and (cur_in_channels == cur_out_channels)
 
-            # Prepare common arguments
             block_kwargs = dict(
                 batchnorm=self.batchnorm,
                 dropout=self.dropout,
@@ -376,8 +365,6 @@ class ResNet(CNN):
             )
 
             if use_bottleneck:
-                # Create a Bottleneck Block
-                # inner_kernel_sizes must be 3x3 as per instructions for ResidualBlocks
                 layers.append(
                     ResidualBottleneckBlock(
                         in_out_channels=cur_in_channels,
@@ -387,7 +374,6 @@ class ResNet(CNN):
                     )
                 )
             else:
-                # Create a Standard Residual Block
                 layers.append(
                     ResidualBlock(
                         in_channels=cur_in_channels,
@@ -397,11 +383,8 @@ class ResNet(CNN):
                     )
                 )
 
-            # Update input channels for the next block
             cur_in_channels = cur_out_channels
 
-            # Apply Pooling only if we completed a full block (size P)
-            # This handles the "N mod P additional ... without a POOL" condition
             if len(chunk) == self.pool_every:
                 layers.append(pool_cls(**self.pooling_params))
 
