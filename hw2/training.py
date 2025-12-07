@@ -280,7 +280,7 @@ class ClassifierTrainer(Trainer):
         loss.backward()
         self.optimizer.step()
         preds = torch.argmax(out, dim=1)
-        num_correct = int((preds==y).sum().item())
+        num_correct = int((preds == y).sum().item())
         batch_loss = float(loss.item())
         # ========================
 

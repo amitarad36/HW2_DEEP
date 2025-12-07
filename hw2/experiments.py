@@ -51,7 +51,7 @@ def mlp_experiment(
     n_classes = 2
 
     dims = [width] * depth + [n_classes]
-    nonlins = ["relu"] * depth + ["none"]
+    nonlins = ["tanh"] * depth + ["none"]
 
     model = BinaryClassifier(
         model=MLP(in_dim=in_dim, dims=dims, nonlins=nonlins),
