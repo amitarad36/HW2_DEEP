@@ -221,76 +221,127 @@ part2_q1 = r"""
 
 ## Part 1: No-Dropout vs Dropout
 
-Yes, the graphs match what we expected to see.
+Yes, the graphs match expectations.
 
-**Explanation:**
-- **Without dropout (blue line)**: The model achieves ~95% training accuracy while test accuracy remains stuck at ~23%. This is classic **severe overfitting**. The model memorizes the training set perfectly but completely fails to generalize to unseen test data. The train loss decreases to ~0.3 while test loss increases over time, diverging dramatically.
+**What happens:**
+- **No dropout**: The model memorizes the small train set, so train accuracy goes up while test accuracy goes down. Train loss keeps falling but test loss is going upward, displaying bad generalization.
 
-- **With dropout (orange and green lines)**: Adding dropout constrains the model from overfitting. With dropout=0.4, training accuracy is reduced to ~70%, but test accuracy improves significantly to ~29% - a 26% improvement over no dropout! This trade-off is exactly what we expect: dropout prevents co-adaptation of neurons and forces the network to learn more robust features.
-
-**Examples from graphs:**
-- Train loss (log scale): No dropout drops to ~0.3; dropout=0.4 stays around ~1.0
-- Test loss (log scale): No dropout increases to ~2.8; dropout=0.4 stays stable around ~2.1
-- Train-test gap: No dropout has 95%-23%=72% gap; dropout=0.4 has only 70%-29%=41% gap
+- **With dropout**: Dropping units forces the model to spread the learning across more neurons. Training improves more slowly, but the test curve stays better, test accuracy is higher than with no dropout, and the train–test gap shrinks.
 
 ## Part 2: Low-Dropout vs High-Dropout Comparison
 
-**Dropout=0.4 (orange) vs Dropout=0.8 (green):**
+- **Moderate dropout**: Good middle ground—still learns useful patterns but doesn’t memorize, so train and test stay closer.
+- **High dropout**: Drops too many neurons that learning slows down, train accuracy doesn't improve, and test accuracy doesn't improve much either.
 
-- **Dropout=0.4**: Best performance with ~70% train accuracy and ~29% test accuracy. Training curves are smooth and test loss is stable. This is the **sweet spot** for regularization.
-
-- **Dropout=0.8**: Underfitting occurs. Train accuracy only reaches ~30% because dropping 80% of neurons is too aggressive - the network loses too much capacity to learn. Test accuracy (~22-24%) is worse than dropout=0.4 because the model fundamentally can't learn the patterns in the data.
-
-**Key insight**: There's an optimal dropout rate. Too little (0) causes overfitting, too much (0.8) causes underfitting. Dropout=0.4 balances regularization and capacity, providing the best generalization in this setting.
+**conclusion:** No dropout overfits, too much dropout underfits. A medium setting is the one to look for.
 """
 
 part2_q2 = r"""
 **Your answer:**
 
-Yes, it is absolutely possible for test loss to **decrease** while test accuracy **decreases** simultaneously.
+Yes, this is possible.
 
-## Why This Happens
+## How it might happen
 
-This can occur due to **changes in model confidence and probability distribution**, not necessarily better predictions.
+Accuracy is just right or wrong, but cross-entropy loss measures how confident the model is with its predictions. The model can get really confident on samples it's already classifying correctly, which drops the loss a lot, while at the same time nudging a few on-the-margin examples from correct to incorrect, which drops the accuracy.
 
-### Example Scenario:
+## Example
 
-Consider a classification where:
-- **Epoch 1**: Model predicts class 0 with confidence 60% and class 1 with confidence 40% for a sample that is actually class 1
-  - Loss: $-\log(0.4) = 0.916$ (incorrect but somewhat confident)
-  - Accuracy: 0 (wrong prediction)
+Say we have 2 test samples:
 
-- **Epoch 2**: Same model predicts class 0 with confidence 55% and class 1 with confidence 45% 
-  - Loss: $-\log(0.45) = 0.799$ (loss decreased!)
-  - Accuracy: 0 (still wrong prediction)
+- **Epoch 1**: Model predicts both correctly but with low confidence (like 51% on the right class).  
+  - Accuracy: 100%  
+  - Loss: High (cross-entropy: $-\log(0.51) + (-\log(0.51)) \approx 0.67 + 0.67 = 1.34$)
 
-### Root Cause:
+- **Epoch 2**: Model becomes 99% confident on the first sample (correct), but drops to 49% on the second sample (now wrong).  
+  - Accuracy: 50% (dropped)  
+  - Loss: Lower (cross-entropy: $-\log(0.99) + (-\log(0.49)) \approx 0.01 + 0.71 = 0.72$)
 
-The cross-entropy loss measures the quality of probability estimates, **not just whether predictions are correct**. When the model:
-1. Reduces confidence in its (incorrect) top prediction
-2. Increases confidence in the correct class slightly
-3. But the predicted class remains the same
-
-Then loss can decrease while accuracy stays the same or even decreases if the model becomes less confident in correct predictions overall.
-
-This is particularly common when:
-- The model is overfitting and learning to be overconfident
-- Regularization or dropout starts to reduce overconfidence
-- The model redistributes its probability mass in ways that improve calibration but hurt accuracy
-
-In practice, when validation loss decreases but validation accuracy stagnates or decreases, it often indicates the model is improving its **confidence calibration** rather than its **classification ability**, which can be a sign of good regularization taking effect.
+So loss dropped from 1.34 to 0.72, even though accuracy dropped from 100% to 50%. This happens when the model makes a new mistake but gets way more confident on other samples.
 """
 
 part2_q3 = r"""
 **Your answer:**
 
+## 1. GD vs SGD
 
-Write your answer using **markdown** and $\LaTeX$:
-```python
-# A code block
-a = 2
-```
-An equation: $e^{i\pi} -1 = 0$
+**Gradient Descent (GD):**
+- Uses the **entire dataset** to compute the gradient at each single step
+- Update rule: $\theta \leftarrow \theta - \eta \nabla_\theta L(\theta; \mathcal{D})$ where $\mathcal{D}$ is all $N$ training samples
+- The gradient is exact,  so it points directly toward the true (local) minimum
+- Very slow when the dataset is large (needs to compute loss and gradient over all samples)
+- Each step is more "certain" but it takes fewer of them per unit time
+
+**Stochastic Gradient Descent (SGD):**
+- Uses a **mini-batch** which is a chunk of the dataset to estimate the gradient of the loss at each step
+- Update rule: $\theta \leftarrow \theta - \eta \nabla_\theta L(\theta; \mathcal{B})$ where $\mathcal{B}$ is a small batch
+- The gradient varies from batch to batch (hypothetically because we calculate it in a different location)
+- Much faster per epoch (small batches fit in memory, compute quickly)
+- Takes many more inaccurate steps, but can escape shallow local minima due to the noise
+
+**Similarities:**
+- Both follow the negative gradient direction on average
+- Both use a learning rate $\eta$ to control step size
+- Both converge to a local minimum (under proper conditions)
+- The core idea is identical: move downhill on the loss surface
+
+**Key difference:** 
+- GD is deterministic and smooth whdile SGD is stochastic and noisy
+- SGD gives up precision per step for many fast steps while GD takes fewer but more accurate steps
+
+## 2. using momentum with GD?
+
+**Yes, momentum can help GD, but it's not as critical as it is for SGD.**
+
+**Why momentum helps GD:**
+- GD still deals with valleys, flat spots, and saddle points even though the gradient is exact
+- Momentum keeps things moving when the gradient gets tiny or keeps changing direction a bit
+- It helps the optimizer "build up speed" and push through flat areas instead of crawling
+
+**Why it's less important than for SGD:**
+- SGD's probem is that gradients are noisy since computing different batches gives other gradients - momentum can help overcome that noise and keeps the updates moving in the general right direction
+- GD already has smooth, exact gradients, so momentum is less crucial
+- The main win for GD is avoiding getting stuck in local minima created by weird loss landscapes; for SGD it's dealing with the noise from sampling batches
+
+**conclusion:** Momentum helps both, but SGD really improves when dealing with noisy batches. For GD it's helpful for handling irregular shapes in the loss surface.
+
+## 3. Handling memory constraints with GD
+
+### 3.1 Gradient equivalence
+
+**Yes, this approach yeilds a gradient equivalent to GD.**
+
+Mathematicaly relying on the linearity of differentiation.
+
+**GD Gradient:** Calculates the gradient of the total loss, which is the sum of losses over all samples:
+$$\nabla_\theta L_{\text{total}} = \nabla_\theta \left( \sum_{i=1}^{N} L(x_i) \right)$$
+
+**New approach:** Sums the losses of the disjoint batches first, then takes the gradient:
+$$\nabla_\theta (L_{\text{batch1}} + L_{\text{batch2}} + \dots) = \nabla_\theta L_{\text{batch1}} + \nabla_\theta L_{\text{batch2}} + \dots$$
+
+Since the batches are just disjoint groups of the original samples, the sum of the batch gradients is equal to the gradient of the sum.
+
+### 3.2 Out of memory error
+
+The problem with this method ensues from the Computational Graph.
+
+When performing a forward pass, all intermediate values are stored in memory (activations, intermediate results) so they are available during backpropagation.
+By waiting to call `backward()` until after all batches, one forces the memory to keep the entire "history" for every single batch at the same time.it's just fitting the entire dataset's computation graph into RAM, but accumulated one batch at a time.
+
+### 3.3 How to solve it: Gradient Accumulation
+
+We can try accumulating gradients instead of accumulating the *loss*. Doing so allows us to free the computation graph after each batch, since we only hold the gradients per batch in memory.
+
+**The Corrected Procedure:**
+for each batch:
+   - Forward pass it
+   - Calculate loss
+   - Immediately call backward()
+   - Accumulate gradients
+
+The parameter gradients now contain the sum of gradients which is equivalent to gradient of the total loss.
+Call `optimizer.step()` to update parameters
+Call `optimizer.zero_grad()` to reset gradients
 
 """
 
