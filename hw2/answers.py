@@ -397,15 +397,17 @@ def part3_optim_hp():
 
 part3_q1 = r"""
 **Your answer:**
+### 1. Types of error
+
+**1.1 optimization error:** ensues from the imperfections of the optimization algorithm and the incomplete picture the data provides (sometimes reffered to as Estimation Error).
+
+**1.2 generalization error:** is the expected error on unseen data, for example, hen a model overfits, it has learned the training data too well, including its noise and outliers, and thus performs poorly on new data.
+
+**1.3 approximation error:** is the error that arises from the limited expresivity of the model, for example, trying to fit a linear approximator to a non-linear data relationship.
 
 
-Write your answer using **markdown** and $\LaTeX$:
-```python
-# A code block
-a = 2
-```
-An equation: $e^{i\pi} -1 = 0$
-
+### 2. Errors on the plots
+**2.1 optimization error:**
 """
 
 part3_q2 = r"""
