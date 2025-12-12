@@ -211,56 +211,52 @@ class ResidualBlock(nn.Module):
         #  - Don't create layers which you don't use! This will prevent
         #    correct comparison in the test.
         # ====== YOUR CODE: ======
-        layers_main_path = []
+        act_cls = ACTIVATIONS[activation_type]
+        # -------------main path -----------------
+
+        layers_main = []
         prev = in_channels
-
-        def get_activation():
-            return nn.LeakyReLU(*activation_params) if activation_type == "lrelu" else nn.ReLU(*activation_params)
-
-        for dim, kernel_size in zip(channels[:-1], kernel_sizes[:-1]):
-            layers_main_path.append(
-                nn.Conv2d(prev, dim, kernel_size, padding=(kernel_size - 1) // 2)
+        for out_ch, k in zip(channels[:-1], kernel_sizes[:-1]):
+            layers_main.append(
+                nn.Conv2d(prev, out_ch, kernel_size=k, padding=(k - 1) // 2, bias=True)
             )
-            layers_main_path.append(nn.Dropout(dropout))
-
+            if dropout and dropout > 0.0:
+                layers_main.append(nn.Dropout2d(dropout))
             if batchnorm:
-                layers_main_path.append(nn.BatchNorm2d(dim))
+                layers_main.append(nn.BatchNorm2d(out_ch))
+            layers_main.append(act_cls(**activation_params))
+            prev = out_ch
 
-            layers_main_path.append(get_activation())
-            prev = dim
-
-        layers_main_path.append(
-            nn.Conv2d(prev, channels[-1], kernel_sizes[-1], padding=(kernel_sizes[-1] - 1) // 2)
+        last_out = channels[-1]
+        last_k = kernel_sizes[-1]
+        layers_main.append(
+            nn.Conv2d(prev, last_out, kernel_size=last_k, padding=(last_k - 1) // 2, bias=True)
         )
-        layers_shortcut_path = []
-        if in_channels != channels[-1]:
-            layers_shortcut_path.append(
-                nn.Conv2d(in_channels, channels[-1], kernel_size=1)
+
+        self.main_path = nn.Sequential(*layers_main)
+
+        # -------------shortcut path -----------------
+        if in_channels != last_out:
+            self.shortcut_path = nn.Sequential(
+                nn.Conv2d(in_channels, last_out, kernel_size=1, bias=False)
             )
         else:
-            layers_shortcut_path.append(nn.Identity())
+            self.shortcut_path = nn.Sequential()
 
-        self.shortcut_path = nn.Sequential(*layers_shortcut_path)
+        self.out_act = act_cls(**activation_params)
 
-
-
-        if batchnorm:
-            layers_main_path.append(nn.BatchNorm2d(channels[-1]))
-
-        self.main_path = nn.Sequential(*layers_main_path)
         # ========================
 
     def forward(self, x: Tensor):
         # TODO: Implement the forward pass. Save the main and residual path to `out`.
         out: Tensor = None
         # ====== YOUR CODE: ======
-        out_main = self.main_path(x)
-        out_shortcut = self.shortcut_path(x)
 
-        out = out_main + out_shortcut
+        out = self.main_path(x) + self.shortcut_path(x)
+        out = self.out_act(out)
 
         # ========================
-        out = torch.relu(out)
+
         return out
 
 
@@ -387,7 +383,6 @@ class ResNet(CNN):
 
             if len(chunk) == self.pool_every:
                 layers.append(pool_cls(**self.pooling_params))
-
 
         # ========================
         seq = nn.Sequential(*layers)

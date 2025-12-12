@@ -155,7 +155,7 @@ def cnn_experiment(
     #   for you automatically.
     fit_res = None
     # ====== YOUR CODE: ======
-    raise NotImplementedError()
+    model =
     # ========================
 
     save_experiment(run_name, out_dir, cfg, fit_res)
