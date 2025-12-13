@@ -114,7 +114,7 @@ def cnn_experiment(
     reg=1e-3,
     # Model params
     filters_per_layer=[64],
-    layers_per_block=2,
+    layers_per_block=8,
     pool_every=2,
     hidden_dims=[1024],
     model_type="cnn",
@@ -155,7 +155,66 @@ def cnn_experiment(
     #   for you automatically.
     fit_res = None
     # ====== YOUR CODE: ======
-    model =
+    # 1. Set default model parameters if they aren't provided
+    if 'pooling_params' not in kw:
+        kw['pooling_params'] = {'kernel_size': 2}
+
+    if 'conv_params' not in kw and model_type == 'cnn':
+        kw['conv_params'] = {'kernel_size': 3, 'padding': 1}
+
+    # 2. Create DataLoaders
+    dl_train = DataLoader(ds_train, batch_size=bs_train, shuffle=True)
+    dl_test = DataLoader(ds_test, batch_size=bs_test, shuffle=False)
+
+    # 3. Determine input shape and classes
+    # CIFAR10 images are (3, 32, 32)
+    x0, _ = ds_train[0]
+    in_size = x0.shape
+    out_classes = 10
+
+    # 4. Construct the channels list
+    channels = []
+    for k in filters_per_layer:
+        channels += [k] * layers_per_block
+
+    # 5. Initialize the model
+    # We pass **kw here because the model NEEDS pooling_params/conv_params
+    model = model_cls(
+        in_size=in_size,
+        out_classes=out_classes,
+        channels=channels,
+        pool_every=pool_every,
+        hidden_dims=hidden_dims,
+        **kw
+    )
+    model.to(device)
+
+    # 6. Loss and Optimizer
+    loss_fn = torch.nn.CrossEntropyLoss()
+    optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=reg)
+
+    # 7. Trainer
+    trainer = ClassifierTrainer(model, loss_fn, optimizer, device)
+
+    # 8. Clean up kwargs for the trainer
+    # The trainer doesn't accept model params, so we remove them from the dict
+    train_kwargs = kw.copy()
+    train_kwargs.pop('pooling_params', None)
+    train_kwargs.pop('conv_params', None)
+    train_kwargs.pop('activation_params', None)
+
+    # 9. Train
+    fit_res = trainer.fit(
+        dl_train,
+        dl_test,
+        num_epochs=epochs,
+        early_stopping=early_stopping,
+        checkpoints=checkpoints,
+        max_batches=batches,
+        **train_kwargs
+    )
+
+
     # ========================
 
     save_experiment(run_name, out_dir, cfg, fit_res)
