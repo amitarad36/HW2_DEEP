@@ -73,8 +73,8 @@ class CNN(nn.Module):
         layers = []
         # TODO: Create the feature extractor part of the model:
         #  [(CONV -> ACT)*P -> POOL]*(N/P)
-        #  Apply activation function after each conv, using the activation type and
-         #  Apply pooling to reduce dimensions after every P convolutions, using the
+        #  Apply activation function after each conv, using the activation type and params.
+        #  Apply pooling to reduce dimensions after every P convolutions, using the
         #  pooling type and pooling parameters.
         #  Note: If N is not divisible by P, then N mod P additional
         #  CONV->ACTs should exist at the end, without a POOL after them.
