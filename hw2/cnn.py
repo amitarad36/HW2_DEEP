@@ -107,8 +107,12 @@ class CNN(nn.Module):
         """
         # Make sure to not mess up the random state.
         rng_state = torch.get_rng_state()
+
+
+
         try:
             # ====== YOUR CODE: ======
+
 
             device = next(self.feature_extractor.parameters()).device
             x = torch.zeros(1, *self.in_size, device=device)  # (1, C, H, W)
@@ -117,6 +121,8 @@ class CNN(nn.Module):
 
             # ========================
         finally:
+
+
             torch.set_rng_state(rng_state)
 
     def _make_mlp(self):
@@ -232,7 +238,12 @@ class ResidualBlock(nn.Module):
         layers_main.append(
             nn.Conv2d(prev, last_out, kernel_size=last_k, padding=(last_k - 1) // 2, bias=True)
         )
-
+#################################################################################
+        # if dropout > 0.0:
+        #     layers_main.append(nn.Dropout2d(dropout))
+        # if batchnorm:
+        #     layers_main.append(nn.BatchNorm2d(last_out))
+#################################################################################
         self.main_path = nn.Sequential(*layers_main)
 
         # -------------shortcut path -----------------
@@ -297,7 +308,12 @@ class ResidualBottleneckBlock(ResidualBlock):
         channels = [inner_channels[0]] + list(inner_channels) + [in_out_channels]
         kernel_sizes = [1] + list(inner_kernel_sizes) + [1]
 
-        super().__init__(in_channels=in_out_channels, channels=channels, kernel_sizes=kernel_sizes, **kwargs)
+        super().__init__(
+            in_channels=in_out_channels,
+            channels=channels,
+            kernel_sizes=kernel_sizes,
+            **kwargs
+        )
 
         # ========================
 
@@ -351,8 +367,11 @@ class ResNet(CNN):
             chunk = self.channels[i: i + self.pool_every]
             cur_out_channels = chunk[-1]
 
-            use_bottleneck = self.bottleneck and (cur_in_channels == cur_out_channels)
-
+            use_bottleneck = (
+                    self.bottleneck
+                    and len(chunk) >= 3
+                    and chunk[0] == chunk[-1]
+            )
             block_kwargs = dict(
                 batchnorm=self.batchnorm,
                 dropout=self.dropout,
@@ -361,14 +380,24 @@ class ResNet(CNN):
             )
 
             if use_bottleneck:
+                in_out = chunk[0]  # e.g. 64
+                inner_channels = chunk[1:-1]
+                inner_kernel_sizes = [3] * len(inner_channels)
+
+                # adapt input channels if needed (3->64 at the beginning)
+                if cur_in_channels != in_out:
+                    layers.append(nn.Conv2d(cur_in_channels, in_out, kernel_size=1, bias=False))
+                    cur_in_channels = in_out
+
                 layers.append(
                     ResidualBottleneckBlock(
-                        in_out_channels=cur_in_channels,
-                        inner_channels=chunk,
-                        inner_kernel_sizes=[3] * len(chunk),
+                        in_out_channels=in_out,  # <-- IMPORTANT
+                        inner_channels=inner_channels,
+                        inner_kernel_sizes=inner_kernel_sizes,
                         **block_kwargs
                     )
                 )
+                cur_out_channels = in_out
             else:
                 layers.append(
                     ResidualBlock(
@@ -378,7 +407,7 @@ class ResNet(CNN):
                         **block_kwargs
                     )
                 )
-
+                cur_out_channels = chunk[-1]
             cur_in_channels = cur_out_channels
 
             if len(chunk) == self.pool_every:
