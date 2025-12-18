@@ -254,7 +254,7 @@ class ResidualBlock(nn.Module):
         else:
             self.shortcut_path = nn.Sequential()
 
-        self.out_act = act_cls(**activation_params)
+        # self.out_act = act_cls(**activation_params)
 
         # ========================
 
@@ -264,8 +264,9 @@ class ResidualBlock(nn.Module):
         # ====== YOUR CODE: ======
 
         out = self.main_path(x) + self.shortcut_path(x)
-        out = self.out_act(out)
-
+        # out = self.out_act(out)
+        relu = torch.nn.ReLU()
+        out = relu(out)
         # ========================
 
         return out

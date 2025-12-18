@@ -56,29 +56,30 @@ class MLP(nn.Module):
         #    instances.
         # ====== YOUR CODE: ======
         super().__init__()
+
+        modules = []
         prev_d = in_dim
-        layers = []
-        non_linears = []
+
         for dim, nonlin in zip(dims, nonlins):
-            linear = nn.Linear(prev_d, dim)
-            layers.append(linear)
+            # Linear
+            modules.append(nn.Linear(prev_d, dim))
+
+            # Activation
             if isinstance(nonlin, str):
                 if nonlin not in ACTIVATIONS:
                     raise ValueError(f"Unknown activation name: {nonlin}")
                 act_cls = ACTIVATIONS[nonlin]
                 act_kwargs = ACTIVATION_DEFAULT_KWARGS[nonlin]
-                act = act_cls(**act_kwargs)
+                modules.append(act_cls(**act_kwargs))
             elif isinstance(nonlin, nn.Module):
-                act = nonlin
+                modules.append(nonlin)
             else:
-                raise TypeError(
-                    f"nonlin must be str or nn.Module, got {type(nonlin)}"
-                )
+                raise TypeError(f"nonlin must be str or nn.Module, got {type(nonlin)}")
 
-            non_linears.append(act)
             prev_d = dim
-        self.layers = nn.ModuleList(layers)
-        self.activations = nn.ModuleList(non_linears)
+
+        # This is what the tests' expected printout shows
+        self.layer_stack = nn.Sequential(*modules)
         # ========================
 
     def forward(self, x: Tensor) -> Tensor:
@@ -90,9 +91,6 @@ class MLP(nn.Module):
         #  shapes are as expected.
         # ====== YOUR CODE: ======
 
-        for layer, act in zip(self.layers, self.activations):
-            x = act(layer(x))
-
-        return x
+        return self.layer_stack(x)
 
         # ========================

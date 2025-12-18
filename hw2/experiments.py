@@ -119,6 +119,7 @@ def cnn_experiment(
     hidden_dims=[1024],
     model_type="cnn",
     # You can add extra configuration for your experiments here
+    activation_type="lrelu",
     **kw,
 ):
     """
