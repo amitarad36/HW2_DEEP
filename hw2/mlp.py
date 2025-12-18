@@ -61,10 +61,9 @@ class MLP(nn.Module):
         prev_d = in_dim
 
         for dim, nonlin in zip(dims, nonlins):
-            # Linear
+
             modules.append(nn.Linear(prev_d, dim))
 
-            # Activation
             if isinstance(nonlin, str):
                 if nonlin not in ACTIVATIONS:
                     raise ValueError(f"Unknown activation name: {nonlin}")
@@ -78,7 +77,6 @@ class MLP(nn.Module):
 
             prev_d = dim
 
-        # This is what the tests' expected printout shows
         self.layer_stack = nn.Sequential(*modules)
         # ========================
 

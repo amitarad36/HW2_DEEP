@@ -138,10 +138,8 @@ class CNN(nn.Module):
         dims = list(self.hidden_dims) + [self.out_classes]
         act_cls = ACTIVATIONS[self.activation_type]
 
-        # Create a list of instantiated activation objects using the correct params
         nonlins = [act_cls(**self.activation_params) for _ in self.hidden_dims]
 
-        # Append 'none' for the final output layer
         nonlins.append("none")
 
         mlp = MLP(in_dim=in_dim, dims=dims, nonlins=nonlins)
@@ -238,12 +236,7 @@ class ResidualBlock(nn.Module):
         layers_main.append(
             nn.Conv2d(prev, last_out, kernel_size=last_k, padding=(last_k - 1) // 2, bias=True)
         )
-#################################################################################
-        # if dropout > 0.0:
-        #     layers_main.append(nn.Dropout2d(dropout))
-        # if batchnorm:
-        #     layers_main.append(nn.BatchNorm2d(last_out))
-#################################################################################
+
         self.main_path = nn.Sequential(*layers_main)
 
         # -------------shortcut path -----------------
@@ -254,8 +247,6 @@ class ResidualBlock(nn.Module):
         else:
             self.shortcut_path = nn.Sequential()
 
-        # self.out_act = act_cls(**activation_params)
-
         # ========================
 
     def forward(self, x: Tensor):
@@ -264,7 +255,7 @@ class ResidualBlock(nn.Module):
         # ====== YOUR CODE: ======
 
         out = self.main_path(x) + self.shortcut_path(x)
-        # out = self.out_act(out)
+
         relu = torch.nn.ReLU()
         out = relu(out)
         # ========================
@@ -377,8 +368,6 @@ class ResNet(CNN):
                 activation_params=self.activation_params,
             )
 
-            # Use bottleneck ONLY when the group's in/out channels match the *current*
-            # running channel count (no pre-adaptation convs).
             use_bottleneck = (
                     self.bottleneck
                     and len(chunk) >= 3
@@ -406,7 +395,6 @@ class ResNet(CNN):
                 )
                 cur_in_channels = chunk[-1]
 
-            # Pool after each FULL group of P convolutions (like the spec/target)
             if is_full_chunk:
                 layers.append(pool_cls(**self.pooling_params))
 
