@@ -361,18 +361,15 @@ class ResNet(CNN):
         #  - Use bottleneck blocks if requested and if the number of input and output
         #    channels match for each group of P convolutions.
         # ====== YOUR CODE: ======
+
         pool_cls = POOLINGS[self.pooling_type]
+
         cur_in_channels = in_channels
 
         for i in range(0, len(self.channels), self.pool_every):
-            chunk = self.channels[i: i + self.pool_every]
-            cur_out_channels = chunk[-1]
+            chunk = self.channels[i:i + self.pool_every]
+            is_full_chunk = (len(chunk) == self.pool_every)
 
-            use_bottleneck = (
-                    self.bottleneck
-                    and len(chunk) >= 3
-                    and chunk[0] == chunk[-1]
-            )
             block_kwargs = dict(
                 batchnorm=self.batchnorm,
                 dropout=self.dropout,
@@ -380,25 +377,24 @@ class ResNet(CNN):
                 activation_params=self.activation_params,
             )
 
+            # Use bottleneck ONLY when the group's in/out channels match the *current*
+            # running channel count (no pre-adaptation convs).
+            use_bottleneck = (
+                    self.bottleneck
+                    and len(chunk) >= 3
+                    and cur_in_channels == chunk[0] == chunk[-1]
+            )
+
             if use_bottleneck:
-                in_out = chunk[0]  # e.g. 64
-                inner_channels = chunk[1:-1]
-                inner_kernel_sizes = [3] * len(inner_channels)
-
-                # adapt input channels if needed (3->64 at the beginning)
-                if cur_in_channels != in_out:
-                    layers.append(nn.Conv2d(cur_in_channels, in_out, kernel_size=1, bias=False))
-                    cur_in_channels = in_out
-
                 layers.append(
                     ResidualBottleneckBlock(
-                        in_out_channels=in_out,  # <-- IMPORTANT
-                        inner_channels=inner_channels,
-                        inner_kernel_sizes=inner_kernel_sizes,
+                        in_out_channels=chunk[0],
+                        inner_channels=chunk[1:-1],
+                        inner_kernel_sizes=[3] * len(chunk[1:-1]),
                         **block_kwargs
                     )
                 )
-                cur_out_channels = in_out
+                cur_in_channels = chunk[-1]
             else:
                 layers.append(
                     ResidualBlock(
@@ -408,10 +404,10 @@ class ResNet(CNN):
                         **block_kwargs
                     )
                 )
-                cur_out_channels = chunk[-1]
-            cur_in_channels = cur_out_channels
+                cur_in_channels = chunk[-1]
 
-            if len(chunk) == self.pool_every:
+            # Pool after each FULL group of P convolutions (like the spec/target)
+            if is_full_chunk:
                 layers.append(pool_cls(**self.pooling_params))
 
         # ========================
