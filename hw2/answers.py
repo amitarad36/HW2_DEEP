@@ -463,13 +463,72 @@ def part4_optim_hp():
 part4_q1 = r"""
 **Your answer:**
 
+We compare a regular convolution block consisting of two $3\times3$ convolutions applied directly to a 256-channel input with a bottleneck block consisting of a $1\times1$, $3\times3$, and $1\times1$ convolution.
 
-Write your answer using **markdown** and $\LaTeX$:
-```python
-# A code block
-a = 2
-```
-An equation: $e^{i\pi} -1 = 0$
+---
+
+### 1. Number of parameters
+
+**Regular block.**  
+Each convolution layer has $256$ input channels and $256$ output channels using a $3\times3$ kernel.  
+The number of parameters per convolution is:
+$$
+3 \times 3 \times 256 \times 256 = 589{,}824.
+$$
+Since there are two such layers, the total number of parameters is:
+$$
+2 \times 589{,}824 = 1{,}179{,}648.
+$$
+
+**Bottleneck block.**  
+The bottleneck block consists of:
+$$
+256 \xrightarrow{1\times1} 64 \xrightarrow{3\times3} 64 \xrightarrow{1\times1} 256.
+$$
+The number of parameters is:
+$$
+1\times1\times256\times64
++ 3\times3\times64\times64
++ 1\times1\times64\times256
+= 69{,}632.
+$$
+Thus, the bottleneck block has much less parameters.
+
+---
+
+### 2. Number of floating point operations (qualitative)
+
+The computational cost of a convolution scales as:
+$$
+H \cdot W \cdot C_{\text{out}} \cdot (2 \cdot C_{\text{in}} \cdot k^2),
+$$
+where the factor of $2$ accounts for multiplications and additions.
+
+**Regular block.**  
+Both layers are $3\times3$ convolutions with $256$ input and output channels, giving a total cost of approximately:
+$$
+2 \cdot H \cdot W \cdot 256 \cdot (2 \cdot 256 \cdot 3 \cdot 3) = H \cdot W \cdot 2359296.
+$$
+
+**Bottleneck block.**  
+The bottleneck block performs two inexpensive $1\times1$ convolutions and a single $3\times3$ convolution at the reduced channel dimension ($64$) giving us approximately:
+$$
+H \cdot W \cdot 64 \cdot (2 \cdot 256 \cdot 1^2) + H \cdot W \cdot 64 \cdot (2 \cdot 64 \cdot 3^2) + H \cdot W \cdot 256 \cdot (2 \cdot 64 \cdot 1^2) = H \cdot W \cdot 64 \cdot 2 \cdot (256 + 64 \cdot 9 + 256) = H \cdot W \cdot 139264
+$$
+
+Again, a lot less computations.
+---
+
+### 3. Ability to combine the input
+
+**Spatial combination (within feature maps).**  
+The regular block applies two $3\times3$ convolutions, resulting in strong spatial mixing and an effective receptive field of approximately $5\times5$.  
+The bottleneck block performs spatial mixing only once, via a single $3\times3$ convolution, leading to a smaller effective receptive field.
+
+**Combination across feature maps (channels).**  
+The bottleneck block uses $1\times1$ convolutions to explicitly and efficiently combine information across channels, first reducing and then restoring the channel dimension.  
+In contrast, the regular block combines channels implicitly through $3\times3$ convolutions, which is computationally more expensive.
+
 
 """
 
