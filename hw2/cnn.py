@@ -107,8 +107,12 @@ class CNN(nn.Module):
         """
         # Make sure to not mess up the random state.
         rng_state = torch.get_rng_state()
+
+
+
         try:
             # ====== YOUR CODE: ======
+
 
             device = next(self.feature_extractor.parameters()).device
             x = torch.zeros(1, *self.in_size, device=device)  # (1, C, H, W)
@@ -117,6 +121,8 @@ class CNN(nn.Module):
 
             # ========================
         finally:
+
+
             torch.set_rng_state(rng_state)
 
     def _make_mlp(self):
@@ -132,10 +138,8 @@ class CNN(nn.Module):
         dims = list(self.hidden_dims) + [self.out_classes]
         act_cls = ACTIVATIONS[self.activation_type]
 
-        # Create a list of instantiated activation objects using the correct params
         nonlins = [act_cls(**self.activation_params) for _ in self.hidden_dims]
 
-        # Append 'none' for the final output layer
         nonlins.append("none")
 
         mlp = MLP(in_dim=in_dim, dims=dims, nonlins=nonlins)
@@ -243,8 +247,6 @@ class ResidualBlock(nn.Module):
         else:
             self.shortcut_path = nn.Sequential()
 
-        self.out_act = act_cls(**activation_params)
-
         # ========================
 
     def forward(self, x: Tensor):
@@ -253,8 +255,9 @@ class ResidualBlock(nn.Module):
         # ====== YOUR CODE: ======
 
         out = self.main_path(x) + self.shortcut_path(x)
-        out = self.out_act(out)
 
+        relu = torch.nn.ReLU()
+        out = relu(out)
         # ========================
 
         return out
@@ -297,7 +300,12 @@ class ResidualBottleneckBlock(ResidualBlock):
         channels = [inner_channels[0]] + list(inner_channels) + [in_out_channels]
         kernel_sizes = [1] + list(inner_kernel_sizes) + [1]
 
-        super().__init__(in_channels=in_out_channels, channels=channels, kernel_sizes=kernel_sizes, **kwargs)
+        super().__init__(
+            in_channels=in_out_channels,
+            channels=channels,
+            kernel_sizes=kernel_sizes,
+            **kwargs
+        )
 
         # ========================
 
@@ -344,14 +352,14 @@ class ResNet(CNN):
         #  - Use bottleneck blocks if requested and if the number of input and output
         #    channels match for each group of P convolutions.
         # ====== YOUR CODE: ======
+
         pool_cls = POOLINGS[self.pooling_type]
+
         cur_in_channels = in_channels
 
         for i in range(0, len(self.channels), self.pool_every):
-            chunk = self.channels[i: i + self.pool_every]
-            cur_out_channels = chunk[-1]
-
-            use_bottleneck = self.bottleneck and (cur_in_channels == cur_out_channels)
+            chunk = self.channels[i:i + self.pool_every]
+            is_full_chunk = (len(chunk) == self.pool_every)
 
             block_kwargs = dict(
                 batchnorm=self.batchnorm,
@@ -360,15 +368,22 @@ class ResNet(CNN):
                 activation_params=self.activation_params,
             )
 
+            use_bottleneck = (
+                    self.bottleneck
+                    and len(chunk) >= 3
+                    and cur_in_channels == chunk[0] == chunk[-1]
+            )
+
             if use_bottleneck:
                 layers.append(
                     ResidualBottleneckBlock(
-                        in_out_channels=cur_in_channels,
-                        inner_channels=chunk,
-                        inner_kernel_sizes=[3] * len(chunk),
+                        in_out_channels=chunk[0],
+                        inner_channels=chunk[1:-1],
+                        inner_kernel_sizes=[3] * len(chunk[1:-1]),
                         **block_kwargs
                     )
                 )
+                cur_in_channels = chunk[-1]
             else:
                 layers.append(
                     ResidualBlock(
@@ -378,10 +393,9 @@ class ResNet(CNN):
                         **block_kwargs
                     )
                 )
+                cur_in_channels = chunk[-1]
 
-            cur_in_channels = cur_out_channels
-
-            if len(chunk) == self.pool_every:
+            if is_full_chunk:
                 layers.append(pool_cls(**self.pooling_params))
 
         # ========================
