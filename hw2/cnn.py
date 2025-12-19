@@ -247,6 +247,8 @@ class ResidualBlock(nn.Module):
         else:
             self.shortcut_path = nn.Sequential()
 
+        # ReLU activation after residual sum
+        self.out_relu = nn.ReLU()
         # ========================
 
     def forward(self, x: Tensor):
@@ -255,9 +257,7 @@ class ResidualBlock(nn.Module):
         # ====== YOUR CODE: ======
 
         out = self.main_path(x) + self.shortcut_path(x)
-
-        relu = torch.nn.ReLU()
-        out = relu(out)
+        out = self.out_relu(out)
         # ========================
 
         return out
