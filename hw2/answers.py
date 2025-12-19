@@ -536,13 +536,91 @@ In contrast, the regular block combines channels implicitly through $3\times3$ c
 part4_q2 = r"""
 **Your answer:**
 
+According to the chain rule:
+$$
+\frac{\partial L}{\partial \mathbf{x}}
+=
+\frac{\partial L}{\partial \mathbf{y}}
+\frac{\partial \mathbf{y}}{\partial \mathbf{x}}.
+$$
 
-Write your answer using **markdown** and $\LaTeX$:
-```python
-# A code block
-a = 2
-```
-An equation: $e^{i\pi} -1 = 0$
+---
+
+### Case 1: $\mathbf{y}_1 = M \mathbf{x}_1$
+
+We have:
+$$
+\frac{\partial \mathbf{y}_1}{\partial \mathbf{x}_1} = M.
+$$
+Therefore,
+$$
+\boxed{
+\frac{\partial L}{\partial \mathbf{x}_1}
+=
+M \frac{\partial L}{\partial \mathbf{y}_1}
+}
+$$
+
+---
+
+### 2. Case 2: $\mathbf{y}_2 = \mathbf{x}_2 + M \mathbf{x}_2$
+
+We can rewrite this as:
+$$
+\mathbf{y}_2 = (I + M)\mathbf{x}_2.
+$$
+Thus,
+$$
+\frac{\partial \mathbf{y}_2}{\partial \mathbf{x}_2} = I + M,
+$$
+and
+$$
+\boxed{
+\frac{\partial L}{\partial \mathbf{x}_2}
+=
+(I + M)\frac{\partial L}{\partial \mathbf{y}_2}
+}
+$$
+
+---
+
+### 3. Why residual connections prevent vanishing gradients
+
+In the first case, the gradient magnitude satisfies:
+$$
+\left\lVert
+\frac{\partial L}{\partial \mathbf{x}_1}
+\right\rVert
+=
+\left\lVert
+M \frac{\partial L}{\partial \mathbf{y}_1}
+\right\rVert
+\le
+\lVert M \rVert
+\left\lVert
+\frac{\partial L}{\partial \mathbf{y}_1}
+\right\rVert,
+$$
+and since $\lVert M \rVert < 1$, the absolute value of the gradient decreases across the layers, making deep networks suffer from vanishing gradients.
+
+In contrast, in the residual case we have:
+$$
+\left\lVert
+\frac{\partial L}{\partial \mathbf{x}_2}
+\right\rVert
+=
+\left\lVert
+(I + M)\frac{\partial L}{\partial \mathbf{y}_2}
+\right\rVert
+\le
+(\lVert I \rVert + \lVert M \rVert)
+\left\lVert
+\frac{\partial L}{\partial \mathbf{y}_2}
+\right\rVert.
+$$
+
+Because the identity matrix $I$ provides a direct gradient path, the gradient does not vanish even when $M$ has small entries. Thus we can make the net as deep as we want and the gradients won't decrease the deeper we go.
+
 
 """
 
