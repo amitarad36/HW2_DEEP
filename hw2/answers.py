@@ -716,9 +716,8 @@ Suggested solutions:
 
 **3. Adversarial Attacks on YOLO:**
 
-To fool YOLO using adversarial attacks similar to PGD we can devise a loss function that targets the different components of YOLO's output:
-(assumming access to the any relevant model information and gradients - white-box attack).
-We solve the constrained optimization problem
+In order to attack YOLO using adversarial attacks similar to PGD we can devise a loss function that targets the different components of YOLO's output (assumming access to the any relevant model information and gradients - white-box attack).
+The idea is to utilize gradient ascent to maximize the loss function while constraining the perturbations within a specified norm ball.
 $$
 \max_{x'} L(x') \quad \text{s.t.} \quad \|x' - x\|_\infty \le \epsilon .
 $$
@@ -727,21 +726,21 @@ Projected gradient ascent updates the image iteratively as
 $$
 \tilde{x}^{(k+1)} = x^{(k)} + \alpha \,\mathrm{sign}\!\left(\nabla_x L(x^{(k)})\right),
 $$
+
+where $\alpha$ is the step size and the sign function ensures we move in the direction of increasing loss.
 $$
 x^{(k+1)} = \Pi_{\|x-x^{(0)}\|_\infty \le \epsilon}\!\left(\tilde{x}^{(k+1)}\right).
 $$
 
-The gradient ascent step increases the objective \(L\), while the projection step only enforces the perturbation constraint by mapping the update to the nearest feasible point. Since the projection does not optimize \(L\), it preserves the ascent direction within the allowed region and therefore does not systematically decrease the loss.
+The gradient ascent step increases the objective Loss, while the projection on the sphere only enforces the perturbation's constraint by collapsing the x (the perturbed image) to the nearest image x (closest point representing closest perturbed image). The projection preserves the ascent direction within the allowed region and therefore does not systematically decrease the loss.
 
 For example, here are 3 types of attacks we can perform, targetting:
 
-**a) Objectness Attack**
+**a) Objectness Loss Attack**
 
-**b) Classification Attack**
+**b) Classification Loss Attack**
 
-**c) Bounding Box Attack**
-
-Iteratively perturb the input image and project the perturbations to the sphere of allowed perturbations to maximize loss.
+**c) Bounding Box Loss Attack**
 
 """
 
@@ -755,24 +754,21 @@ part6_q2 = r"""
 part6_q3 = r"""
 **Your answer:**
 
-The model's performance varied significantly across the three pitfall images:
+**Image 1 - Cat hiding behind a furniture (Occlusion):**
+The model detected the cat with moderate confidence, probably because only half of its face is visible. The occlusion likely diminishes key features the model relies on for confident detection.
 
-**Image 1 - Cat hiding behind furniture (Occlusion):**
-The model detected the cat with moderate confidence (0.56). However, only the cat's face is visible while the rest of the body is occluded behind furniture. This demonstrates occlusion as a pitfall - the model can still make a detection when distinctive features (like the face) are visible, but the partial occlusion limits the confidence and could have easily resulted in a complete miss if more of the cat was hidden.
-
-**Image 2 - Cats on cow-pattern blanket (Textured Background/Model Bias):**
-This image reveals severe classification errors caused by the highly textured cow-print blanket. The model detected:
-- 2 "dogs" (confidence 0.57 and 0.45) - misclassifying the actual cats
+**Image 2 - Cats on cow-pattern blanket (Textured Background):**
+This image is tricky for the model (and for a human it might be so as well hhh). It detected:
+- 2 "dogs" (confidence 0.57 and 0.45) - which are actually cats
 - 1 "cow" (confidence 0.45) - incorrectly detecting the blanket pattern as a cow
-- 1 "bed" (confidence 0.37) - detecting the background
-- Only 1 "cat" correctly (confidence 0.34) - with the lowest confidence!
+- 1 "bed" (confidence 0.37) - surprisingly detecting the bed correctly but with low confidence (We would also be inconfident about it)
+- Only 1 "cat" correctly (confidence 0.34) - with the low confidence (its hidden behind another prediction window)
 
-This demonstrates how textured/patterned backgrounds can confuse the model, especially when the pattern resembles features of other animals. The cow-print pattern likely activated features in the network trained on actual cows, leading to false positives and misclassifications of the cats as dogs.
+This image demonstrates how textured/patterned backgrounds can confuse the model.
 
-**Image 3 - Blurred image (Motion Blur):**
-The model detected only 1 "person" with moderate confidence (0.61) in this heavily blurred image. Motion blur significantly degrades detection performance by destroying sharp edges and fine details that CNN features rely on. While the model managed to detect a person (likely due to the large size and distinctive shape), the blur makes precise localization difficult and could completely prevent detection of smaller objects or objects requiring fine feature discrimination.
+**Image 3 - Blurred person (Motion Blur):**
+The model detected a person with moderate confidence (we could expect the model to do well on the same image without blur). Motion blur degrades detection by eliminating sharp edges and details that CNN feature extraction relies on.
 
-Overall, these results demonstrate that YOLO is highly sensitive to real-world conditions that deviate from its training distribution: occlusion reduces detection confidence, patterned backgrounds cause misclassifications, and motion blur degrades both detection and localization performance.
 """
 
 part6_bonus = r"""
