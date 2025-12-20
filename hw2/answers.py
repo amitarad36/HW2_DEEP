@@ -631,54 +631,58 @@ Because the identity matrix $I$ provides a direct gradient path, the gradient do
 
 
 part5_q1 = r"""
+
 **Your answer:**
 
+1. We noticed that networks with small depth values ($L = 2, 4$) achieve relatively solid performance (approximately $65\%$ test accuracy). However, as the depth increases ($L = 8, 16$), performance degrades significantly.
 
-Write your answer using **markdown** and $\LaTeX$:
-```python
-# A code block
-a = 2
-```
-An equation: $e^{i\pi} -1 = 0$
+   This suggests that increasing the depth beyond a certain threshold does not improve representation power, only leads to optimization difficulties.
+
+2. In particular, the network with $L = 16$ became untrainable, as it did not pass the $10\%$ accuracy, which corresponds to random guessing. We think it happened duo to **vanishing gradients**: as the network becomes deeper, gradients shrink (in magnitude) during backpropagation and fail to meaningfully update early layers.
+
+   We attempted to mitigate this issue by increasing the learning rate and by reducing the batch size to introduce additional stochasticity. However, the higher learning rate led to unstable training, and changing the batch size did not resolve the optimization failure.
+
 
 """
 
 part5_q2 = r"""
 **Your answer:**
 
+Fixing the depth $L$ and varying the number of channels $K$, we observe that **larger channel sizes lead to faster convergence and higher final accuracy**.
 
-Write your answer using **markdown** and $\LaTeX$:
-```python
-# A code block
-a = 2
-```
-An equation: $e^{i\pi} -1 = 0$
+In particular, the model with $K = 32$ channels performed the worst, while increasing the number of channels to $K = 64$ improved performance, and $K = 128$ achieved the best results. This trend was consistent throughout the experiment.
+
+This behavior is expected, as increasing the number of channels increases the model’s capacity, allowing it to learn richer feature representations at the cost of higher computational complexity.
+
 
 """
 
 part5_q3 = r"""
 **Your answer:**
 
+Modifying the number of channels in this experiment did not lead to a significant improvement in performance. Across configurations, the model consistently achieved around $65\%$ accuracy.
 
-Write your answer using **markdown** and $\LaTeX$:
-```python
-# A code block
-a = 2
-```
-An equation: $e^{i\pi} -1 = 0$
+This suggests that, under the given architectural and optimization constraints, increasing channel width alone was insufficient to overcome the existing performance bottleneck.
 
 """
 
 part5_q4 = r"""
 **Your answer:**
 
+The most significant performance improvement was observed when switching to a ResNet model. This marked the first configuration in which the model achieved approximately $70\%$ test accuracy and made deeper networks be trainable and even exceed the performance of the shorter networks.
 
-Write your answer using **markdown** and $\LaTeX$:
-```python
-# A code block
-a = 2
-```
-An equation: $e^{i\pi} -1 = 0$
+The improvement can be attributed to residual connections, which enable more effective gradient flow through the network and mitigate optimization issues commonly encountered in deeper architectures.
+
+"""
+
+part5_q5 = r"""
+**Your answer:**
+
+When training our own model, we introduced **batch normalization**, which resulted in a substantial performance improvement, reaching approximately $80\%$ test accuracy.
+
+Batch normalization stabilizes the training process by normalizing intermediate activations.
+
+Empirically, we observed that the network converged significantly faster and more reliably when batch normalization was applied. Additionally, reducing the depth $L$ further improved learning speed, indicating that while batch normalization alleviates optimization difficulties in deep networks, shallower models remained easier to train in this setting.
 
 """
 

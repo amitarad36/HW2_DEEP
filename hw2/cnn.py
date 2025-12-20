@@ -113,15 +113,13 @@ class CNN(nn.Module):
         try:
             # ====== YOUR CODE: ======
 
-
             device = next(self.feature_extractor.parameters()).device
-            x = torch.zeros(1, *self.in_size, device=device)  # (1, C, H, W)
+            x = torch.zeros(1, *self.in_size, device=device)
             out = self.feature_extractor(x)
             return out.numel()
 
             # ========================
         finally:
-
 
             torch.set_rng_state(rng_state)
 
@@ -401,4 +399,36 @@ class ResNet(CNN):
         # ========================
         seq = nn.Sequential(*layers)
         return seq
+
+
+class YourCNN(ResNet):
+    def __init__(
+        self,
+        in_size,
+        out_classes,
+        channels,
+        pool_every,
+        hidden_dims,
+        batchnorm=True,
+        dropout=0.01,
+        bottleneck: bool = True,
+
+        **kwargs,
+    ):
+        self.batchnorm = batchnorm
+        self.dropout = dropout
+        self.bottleneck = bottleneck
+
+        if "pooling_params" not in kwargs:
+            kwargs["pooling_params"] = {"kernel_size" : 2, "stride": 2}
+
+        if "conv_params" not in kwargs:
+            kwargs["conv_params"] = {"kernel_size": 3, "stride": 1, "padding": 1}
+
+        super().__init__(
+            in_size, out_classes, channels, pool_every, hidden_dims,
+            batchnorm=batchnorm, dropout=dropout, bottleneck=bottleneck, **kwargs
+        )
+
+
 
