@@ -399,40 +399,38 @@ part3_q1 = r"""
 **Your answer:**
 ### 1. Types of error
 
-**1.1 optimization error:** ensues from the imperfections of the optimization algorithm and the incomplete picture the data provides (sometimes reffered to as Estimation Error).
+**optimization error:**  
+Error that comes from the imperfection of the optimization algorithm. Even if there is a model within the hypothesis class that can achieve a lower training loss, the optimizer will fail to reach this minimum.
 
-**1.2 generalization error:** is the expected error on unseen data, for example, hen a model overfits, it has learned the training data too well, including its noise and outliers, and thus performs poorly on new data.
+**generalization error:**  
+Error that arises from the difference between the model’s performance on the training data and its performance on unseen data. In practice, this is observed as a gap between training and validation loss or accuracy.
 
-**1.3 approximation error:** is the error that arises from the limited expresivity of the model, for example, trying to fit a linear approximator to a non-linear data relationship.
+**approximation error:**  
+Error that comes from the limited expressivity of the model class itself. Even if the global minimum of the training loss is reached, the model may still perform poorly if it cannot represent the true underlying function (for example, fitting a linear model to a nonlinear relationship).
 
 
 ### 2. Errors on the plots
-**2.1 optimization error:**
+
+The training loss decreases steadily and the training accuracy reaches a high value, meaning that the optimization error is low and the model is expressive enough, so approximation error is also low.
+
+The test data is generated from a noisy distribution, so we can not achieve zero test error. As a result, a non-zero test loss and a persistent gap between training and test performance are expected. The 'bumps' in test loss and accuracy are explained by the error that comes from the noise, rather than by bad optimization or limited model expressivity.
+
 """
+
 
 part3_q2 = r"""
 **Your answer:**
 
+There are applications in which we prefer low false positive rate at the cost of high false negative rate, and others where the opposite is true. For example (this is a real case), we developed a device to detect breast cancer. If the device indicates that a patient may have cancer, the patient is referred for a more accurate follow-up test, such as an MRI. In this context, it is preferable to incorrectly flag a healthy individual (high FPR) and recommend further testing than to miss a cancer diagnosis by incorrectly indicating that no cancer is present (low FNR).
 
-Write your answer using **markdown** and $\LaTeX$:
-```python
-# A code block
-a = 2
-```
-An equation: $e^{i\pi} -1 = 0$
+On the other hand, consider a system that automatically opens a gate when a vehicle arrives. In this case, we would prefer the gate to open almost every time a car approaches (low FNR), even if from time to time it opens when no vehicle is present (high FPR).
 
 """
 
 part3_q3 = r"""
 **Your answer:**
 
-
-Write your answer using **markdown** and $\LaTeX$:
-```python
-# A code block
-a = 2
-```
-An equation: $e^{i\pi} -1 = 0$
+Our model performed worst when it had low width values. When the width was set to 2, the resulting decision boundary was effectively linear, indicating limited expressivity. As the width increased, the decision boundary became more complex and better reflected a meaningful separation between the classes. However, increasing model capacity did not yield further benefits: we observed no significant performance improvement when moving from a configuration with depth 1 and width 8 all across the configuration with depth 4 and width 32. Those models and all the inbetween-models achieved identical results.
 
 """
 
