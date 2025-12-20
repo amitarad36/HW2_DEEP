@@ -696,13 +696,52 @@ Empirically, we observed that the network converged significantly faster and mor
 part6_q1 = r"""
 **Your answer:**
 
+**1. Detection Performance and Confidence:**
 
-Write your answer using **markdown** and $\LaTeX$:
-```python
-# A code block
-a = 2
-```
-An equation: $e^{i\pi} -1 = 0$
+**Image 1 (DolphinsInTheSky.jpg):** The model detected objects with moderate confidence, but made significant classification errors. Instead of detecting dolphins, it misclassified them as "person" and "surfboard".
+
+**Image 2 (cat-shiba-inu-2.jpg):** The model successfully localized the dogs but completely missed the cat in the image. regardidng the dogs, it had moderate confidence in its detections, which were wrong on 2 out of 3.
+
+**2. Reasons for Failures and Suggested Solutions:**
+
+Possible reasons for the failures:
+- **Unseen context:** Dolphins appearing in the sky violate the contextual distributions learned from the training data.
+- **Object co-occurrence:** The model might be associating dolphins with people and surfboards due to frequent co-occurrence in the training dataset.
+- **Object scale or occlusion:** The cat may be smaller or partially occluded relative to the dog, making detection harder.
+
+Suggested solutions:
+- **Training data augmentation:** Add training examples with objects in unusual or unexpected environments so the model will be less sensitive to context.
+- **Threshold adjustment:** decrease confidence threshold or use a higher iou threshold for overlapping predictions won't ignore a true object too aggressively.
+- **Multi-scale training:** Train the model on images of varying scales to improve detection of small or partially occluded objects.
+
+**3. Adversarial Attacks on YOLO:**
+
+To fool YOLO using adversarial attacks similar to PGD we can devise a loss function that targets the different components of YOLO's output:
+(assumming access to the any relevant model information and gradients - white-box attack).
+We solve the constrained optimization problem
+$$
+\max_{x'} L(x') \quad \text{s.t.} \quad \|x' - x\|_\infty \le \epsilon .
+$$
+
+Projected gradient ascent updates the image iteratively as
+$$
+\tilde{x}^{(k+1)} = x^{(k)} + \alpha \,\mathrm{sign}\!\left(\nabla_x L(x^{(k)})\right),
+$$
+$$
+x^{(k+1)} = \Pi_{\|x-x^{(0)}\|_\infty \le \epsilon}\!\left(\tilde{x}^{(k+1)}\right).
+$$
+
+The gradient ascent step increases the objective \(L\), while the projection step only enforces the perturbation constraint by mapping the update to the nearest feasible point. Since the projection does not optimize \(L\), it preserves the ascent direction within the allowed region and therefore does not systematically decrease the loss.
+
+For example, here are 3 types of attacks we can perform, targetting:
+
+**a) Objectness Attack**
+
+**b) Classification Attack**
+
+**c) Bounding Box Attack**
+
+Iteratively perturb the input image and project the perturbations to the sphere of allowed perturbations to maximize loss.
 
 """
 
@@ -710,39 +749,33 @@ An equation: $e^{i\pi} -1 = 0$
 part6_q2 = r"""
 **Your answer:**
 
-
-Write your answer using **markdown** and $\LaTeX$:
-```python
-# A code block
-a = 2
-```
-An equation: $e^{i\pi} -1 = 0$
-
 """
 
 
 part6_q3 = r"""
 **Your answer:**
 
+The model's performance varied significantly across the three pitfall images:
 
-Write your answer using **markdown** and $\LaTeX$:
-```python
-# A code block
-a = 2
-```
-An equation: $e^{i\pi} -1 = 0$
+**Image 1 - Cat hiding behind furniture (Occlusion):**
+The model detected the cat with moderate confidence (0.56). However, only the cat's face is visible while the rest of the body is occluded behind furniture. This demonstrates occlusion as a pitfall - the model can still make a detection when distinctive features (like the face) are visible, but the partial occlusion limits the confidence and could have easily resulted in a complete miss if more of the cat was hidden.
 
+**Image 2 - Cats on cow-pattern blanket (Textured Background/Model Bias):**
+This image reveals severe classification errors caused by the highly textured cow-print blanket. The model detected:
+- 2 "dogs" (confidence 0.57 and 0.45) - misclassifying the actual cats
+- 1 "cow" (confidence 0.45) - incorrectly detecting the blanket pattern as a cow
+- 1 "bed" (confidence 0.37) - detecting the background
+- Only 1 "cat" correctly (confidence 0.34) - with the lowest confidence!
+
+This demonstrates how textured/patterned backgrounds can confuse the model, especially when the pattern resembles features of other animals. The cow-print pattern likely activated features in the network trained on actual cows, leading to false positives and misclassifications of the cats as dogs.
+
+**Image 3 - Blurred image (Motion Blur):**
+The model detected only 1 "person" with moderate confidence (0.61) in this heavily blurred image. Motion blur significantly degrades detection performance by destroying sharp edges and fine details that CNN features rely on. While the model managed to detect a person (likely due to the large size and distinctive shape), the blur makes precise localization difficult and could completely prevent detection of smaller objects or objects requiring fine feature discrimination.
+
+Overall, these results demonstrate that YOLO is highly sensitive to real-world conditions that deviate from its training distribution: occlusion reduces detection confidence, patterned backgrounds cause misclassifications, and motion blur degrades both detection and localization performance.
 """
 
 part6_bonus = r"""
 **Your answer:**
-
-
-Write your answer using **markdown** and $\LaTeX$:
-```python
-# A code block
-a = 2
-```
-An equation: $e^{i\pi} -1 = 0$
 
 """
