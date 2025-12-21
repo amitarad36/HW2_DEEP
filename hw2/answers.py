@@ -136,22 +136,21 @@ part1_q2 = r"""
 Gradient descent only looks at the gradient, so it looks at the loss surface uniformly in every direction. It might become inefficient when the function has very different curvature in different directions — for example, a long narrow valley where one direction is very steep and the other is almost flat.  
 In this situation GD keeps jumping from side to side across the steep direction and moves very slowly along the flat direction. So the optimizer spends most of its time “zig-zagging” instead of actually making progress.
 
-This is exactly where the second-order derivative (the Hessian) becomes useful.  
-The Hessian tells us how curved the function is in each direction:
+This is where the second-order derivative (the Hessian) is useful.  
+The Hessian quantifies how curved the function is in each direction:
 
 - **High curvature** → the loss changes quickly (steep direction).  
 - **Low curvature** → the loss changes slowly (flat direction).
 
-Knowing this lets us adjust the step size differently for different directions: take tiny steps where the curvature is high, and much larger steps where the curvature is low.
+This lets us adjust the step size differently for different directions, that is, to take tiny steps where the curvature is high, and larger steps where the curvature is low.
 
-Newton's method is an example of using this idea. The update rule
+Newton's method is an example of a method harnessing the second-order derivative. The update rule is:
 
 $$
 \theta_{t+1} = \theta_t - H^{-1} \nabla J(\theta_t)
 $$
 
-basically says: "scale the gradient by the inverse curvature."  (separately for each direction)
-This helps the optimizer take more direct paths to the minimum, avoiding the zig-zagging problem.
+interpretation: "scale the gradient by the inverse curvature"  (separately for each direction), thus the optimizer avoids the zig-zagging problem.
 
 """
 

@@ -72,7 +72,7 @@ class Trainer(abc.ABC):
         best_acc = None
 
         for epoch in range(num_epochs):
-            verbose = bool(kw.pop('verbose', False))
+            verbose = False  # pass this to train/test_epoch.
             if print_every > 0 and (
                 epoch % print_every == 0 or epoch == num_epochs - 1
             ):
@@ -83,6 +83,7 @@ class Trainer(abc.ABC):
             #  - Use the train/test_epoch methods.
             #  - Save losses and accuracies in the lists above.
             # ====== YOUR CODE: ======
+            kw.pop('verbose', None)  # Remove verbose from kw to avoid duplicate keyword argument
             train_result = self.train_epoch(dl_train, verbose=verbose, **kw)
             train_loss.append(sum(train_result.losses) / len(train_result.losses))
             train_acc.append(train_result.accuracy)

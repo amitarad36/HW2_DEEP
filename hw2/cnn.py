@@ -74,7 +74,8 @@ class CNN(nn.Module):
         # TODO: Create the feature extractor part of the model:
         #  [(CONV -> ACT)*P -> POOL]*(N/P)
         #  Apply activation function after each conv, using the activation type and
-         #  Apply pooling to reduce dimensions after every P convolutions, using the
+        #  parameters.
+        #  Apply pooling to reduce dimensions after every P convolutions, using the
         #  pooling type and pooling parameters.
         #  Note: If N is not divisible by P, then N mod P additional
         #  CONV->ACTs should exist at the end, without a POOL after them.
@@ -107,20 +108,14 @@ class CNN(nn.Module):
         """
         # Make sure to not mess up the random state.
         rng_state = torch.get_rng_state()
-
-
-
         try:
             # ====== YOUR CODE: ======
-
             device = next(self.feature_extractor.parameters()).device
             x = torch.zeros(1, *self.in_size, device=device)
             out = self.feature_extractor(x)
             return out.numel()
-
             # ========================
         finally:
-
             torch.set_rng_state(rng_state)
 
     def _make_mlp(self):
